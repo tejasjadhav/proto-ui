@@ -1,0 +1,8 @@
+syntax = "proto3";
+
+package com.helloworld.errors;
+
+enum ErrorCode {
+    ERROR_CODE_UNKNOWN = 0;
+    ERROR_CODE_INTERNAL_SERVER_ERROR = 9999;
+}
