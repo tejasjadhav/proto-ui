@@ -4,7 +4,7 @@ export interface FieldTypeValues {
 
 export interface FieldType {
   type: string;
-  repeated?: true;
+  repeated?: boolean;
   values?: FieldTypeValues;
 }
 
