@@ -1,0 +1,40 @@
+syntax = "proto3";
+
+package protoui.sample.fruits;
+
+import "google/protobuf/timestamp.proto";
+
+service FruitService {
+    rpc GetFruits (GetFruitsRequest) returns (GetFruitsResponse);
+}
+
+enum Color {
+    COLOR_UNKNOWN = 0;
+    COLOR_RED = 1;
+    COLOR_YELLOW = 2;
+    COLOR_BROWN = 3;
+    COLOR_GREEN = 4;
+    COLOR_ANY = 5;
+}
+
+message CostRange {
+    int32 minimum = 1;
+    int32 maximum = 1;
+}
+
+message GetFruitsRequest {
+    Color color = 1;
+    CostRange range = 2;
+    string name = 3;
+}
+
+message Fruit {
+    string name = 1;
+    Color color = 2;
+    int32 cost = 3;
+}
+
+message GetFruitsResponse {
+    bool success = 1;
+    repeated Fruit fruits = 2;
+}

@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, IpcMainInvokeEvent } from 'electron';
+import { app, BrowserWindow, ipcMain, IpcMainInvokeEvent, Menu } from 'electron';
 import installExtension, { REACT_DEVELOPER_TOOLS } from 'electron-devtools-installer';
 import * as isDev from 'electron-is-dev';
 import * as grpc from 'grpc';
@@ -6,12 +6,56 @@ import { Client, Metadata } from 'grpc';
 import * as path from 'path';
 import { Method, Service } from 'protobufjs';
 import * as Util from 'util';
-import { IPC_EXECUTE_GRPC_REQUEST, IPC_LOAD_PROTO } from '../src/types/ipc';
+import { Response } from '../src/contract/common';
+import {
+  IPC_EXECUTE_GRPC_REQUEST,
+  IPC_LOAD_PROTO,
+  IPC_PROTO_MANAGER_GET_SERVICES,
+  Service as IpcService,
+} from '../src/types/ipc';
 import { GrpcRequest } from '../src/types/proto';
 import { ProtoDefinitionState } from '../src/types/states';
-import { CommonSourceRoot } from './proto/CommonSourceRoot';
+import { CommonSourceRoot, PROTO_SOURCES } from './proto/CommonSourceRoot';
+import ProtoManager from './protomanager/ProtoManager';
 
 let win: BrowserWindow | null = null;
+
+function getBaseUrl(): string {
+  if (isDev) {
+    return 'http://localhost:3000/index.html';
+  }
+  // 'build/index.html'
+  return `file://${__dirname}/../index.html`;
+}
+
+Menu.setApplicationMenu(Menu.buildFromTemplate([
+  {
+    label: app.name,
+    submenu: [
+      { role: 'about' },
+      { type: 'separator' },
+      {
+        label: 'Preferences',
+        click: (menuItem, browserWindow) => {
+          browserWindow?.loadURL(`${getBaseUrl()}/#proto-manager`);
+        },
+      },
+
+    ],
+  },
+  {
+    label: 'Edit',
+    submenu: [
+      { role: 'undo' },
+      { role: 'redo' },
+      { type: 'separator' },
+      { role: 'cut' },
+      { role: 'copy' },
+      { role: 'paste' },
+      { role: 'selectAll' },
+    ],
+  },
+]));
 
 function createWindow() {
   win = new BrowserWindow({
@@ -24,12 +68,7 @@ function createWindow() {
   win.maximize();
   win.show();
 
-  if (isDev) {
-    win.loadURL('http://localhost:3000/index.html');
-  } else {
-    // 'build/index.html'
-    win.loadURL(`file://${__dirname}/../index.html`);
-  }
+  win.loadURL(getBaseUrl());
 
   win.on('closed', () => win = null);
 
@@ -72,14 +111,17 @@ function consoledir(obj: any) {
 }
 
 ipcMain.handle(IPC_LOAD_PROTO, (async (event: IpcMainInvokeEvent, protoPath: string): Promise<ProtoDefinitionState> => {
-  const root = new CommonSourceRoot();
+  const root = new CommonSourceRoot(PROTO_SOURCES);
   await root.load(protoPath);
   root.loadMessageTemplates();
+
+  const protoManager = new ProtoManager(PROTO_SOURCES);
+  await protoManager.loadProtoFile(protoPath);
 
   return {
     services: root.getServices(),
     messageTemplates: root.messageTemplates,
-    root: null,
+    root: protoManager.dataStore,
   };
 }));
 
@@ -109,14 +151,14 @@ function makeGrpcCall(client: Client, qualifiedMethodName: string, requestData: 
 ipcMain.handle(IPC_EXECUTE_GRPC_REQUEST, (async (event: IpcMainInvokeEvent, grpcRequest: GrpcRequest) => {
   // TODO: Replace with Protobuf.js with https://www.npmjs.com/package/@grpc/proto-loader
   // gRPC client setup
-  const Client = grpc.makeGenericClientConstructor({}, '', {});
-  const client = new Client(
+  const ClientConstructor = grpc.makeGenericClientConstructor({}, '', {});
+  const client = new ClientConstructor(
     grpcRequest.address,
     grpc.credentials.createInsecure(),
   );
 
   // Load definitions from proto files
-  const root = new CommonSourceRoot();
+  const root = new CommonSourceRoot(PROTO_SOURCES);
   await root.load(grpcRequest.protoPath, { keepCase: true });
 
   // Generate fully qualified method name
@@ -150,7 +192,10 @@ ipcMain.handle(IPC_EXECUTE_GRPC_REQUEST, (async (event: IpcMainInvokeEvent, grpc
   // Decode the gRPC data into response
   const responseMessageType = methodDefinition?.responseType;
   const responseMessageTypeDefinition = root.lookupType(responseMessageType ?? '');
-  return responseMessageTypeDefinition.toObject(responseMessageTypeDefinition.decode(encodedResponseData), { enums: String });
+  return responseMessageTypeDefinition.toObject(responseMessageTypeDefinition.decode(encodedResponseData), {
+    enums: String,
+    longs: Number,
+  });
 }));
 
 function getMethodFromService(service: Service, method: string): Method | null {
@@ -164,3 +209,9 @@ function getNamespace(service: any): string[] {
 
   return [...getNamespace(service.parent), service.name];
 }
+
+const protoManager = new ProtoManager(PROTO_SOURCES);
+
+ipcMain.handle(IPC_PROTO_MANAGER_GET_SERVICES, (async (event: IpcMainInvokeEvent): Promise<Response<IpcService[]>> => {
+  return await protoManager.getServices();
+}));

@@ -1,7 +1,8 @@
+import { Dialog, IpcRenderer, remote } from 'electron';
 import React, { ChangeEvent } from 'react';
-import { IpcRenderer, Dialog, remote } from 'electron';
 
 import AceEditor from 'react-ace';
+import { Link } from 'react-router-dom';
 import { Button, Col, Container, Form, InputGroup, Nav, Row, Tab } from 'react-bootstrap';
 import { FileEarmarkArrowUpFill, PlusCircle, XCircle } from 'react-bootstrap-icons';
 import { connect, ConnectedProps } from 'react-redux';
@@ -14,22 +15,23 @@ import {
   setAddress,
   setMethod,
   setRequestBody,
-  setResponseBody,
   setRequestMetadata,
+  setResponseBody,
   setService,
 } from '../../actions/tabs';
 import { IPC_EXECUTE_GRPC_REQUEST, IPC_LOAD_PROTO } from '../../types/ipc';
-import { TabsState } from '../../types/states';
+import { State } from '../../types/states';
 
 import 'ace-builds/src-noconflict/ext-language_tools';
 import 'ace-builds/src-noconflict/mode-json5';
-import 'ace-builds/src-noconflict/theme-github';
+import 'ace-builds/src-noconflict/theme-tomorrow';
+import 'ace-builds/src-noconflict/theme-tomorrow_night';
 
 const electron = window.require('electron');
 const ipcRenderer: IpcRenderer = electron.ipcRenderer;
 const dialog: Dialog = remote.dialog;
 
-const connector = connect((state: TabsState): TabsState => state, {
+const connector = connect((state: State): State => state, {
   newTab,
   setActiveTab,
   deleteTab,
@@ -44,38 +46,56 @@ const connector = connect((state: TabsState): TabsState => state, {
 });
 type PropsFromRedux = ConnectedProps<typeof connector>;
 
+function getTheme(theme: string): string {
+  if (theme === 'dark') {
+    return 'tomorrow_night';
+  }
+
+  return 'tomorrow';
+}
+
+function getColor(theme: string): string {
+  if (theme === 'dark') {
+    return '#ffffff';
+  }
+
+  return '#000000';
+}
+
 const Home = (props: PropsFromRedux) => {
-  console.dir(ipcRenderer);
+  const theme = getTheme(props.tabs.theme);
+  const iconColor = getColor(props.tabs.theme);
+
   return (
     <Container fluid>
       <Row>
         <Col lg="2">
-          Sidebar
+          <Link to="/proto-manager">Proto manager</Link>
         </Col>
         <Col lg="10">
-          <Tab.Container activeKey={props.activeTab} onSelect={activeKey => props.setActiveTab(activeKey || '')}
+            <Tab.Container activeKey={props.tabs.activeTab} onSelect={activeKey => props.setActiveTab(activeKey || '')}
             transition={false}>
             <Row>
               <Col>
                 <Nav variant="tabs">
-                  {props.tabs.map((tab) => (
+                  {props.tabs.tabs.map((tab) => (
                     <Nav.Item key={tab.id}>
                       <Nav.Link eventKey={tab.id}>
                         <span className="tab-title">{tab.address || 'New tab'}</span>
                         <Button className="p-0 pl-1 pb-1" type="button" variant="outline" title="Close tab"
-                          onClick={() => props.deleteTab(tab.id)}><XCircle /></Button>
+                          onClick={() => props.deleteTab(tab.id)}><XCircle color={iconColor} /></Button>
                       </Nav.Link>
                     </Nav.Item>
                   ))}
 
-                  <Button type="button" variant="outline" title="New tab" onClick={props.newTab}><PlusCircle /></Button>
+                  <Button type="button" variant="outline" title="New tab" onClick={props.newTab}><PlusCircle color={iconColor} /></Button>
                 </Nav>
               </Col>
             </Row>
             <Row>
               <Col>
                 <Tab.Content>
-                  {props.tabs.map((tab) => (
+                  {props.tabs.tabs.map((tab) => (
                     <Tab.Pane key={tab.id} eventKey={tab.id}>
                       <Form>
                         <Row className="mt-3">
@@ -108,7 +128,7 @@ const Home = (props: PropsFromRedux) => {
                                     onChange={(event: ChangeEvent) => props.setService(tab.id, event.target.value)}
                                   >
                                     <option value="">-</option>
-                                    {props.protoDefinition.services.map((service) => (
+                                    {props.tabs.protoDefinition.services.map((service) => (
                                       <option key={service.name} value={service.name}>{service.name}</option>
                                     ))}
                                   </Form.Control>
@@ -157,7 +177,7 @@ const Home = (props: PropsFromRedux) => {
                               <Form.Label>Metadata</Form.Label>
                               <AceEditor
                                 mode="json5"
-                                theme="github"
+                                theme={theme}
                                 value={tab.metadata}
                                 onChange={(value: string) => props.setRequestMetadata(tab.id, value)}
                                 className="editor"
@@ -190,7 +210,7 @@ const Home = (props: PropsFromRedux) => {
                               </Form.Label>
                               <AceEditor
                                 mode="json5"
-                                theme="github"
+                                theme={theme}
                                 value={tab.requestBody}
                                 onChange={(value: string) => props.setRequestBody(tab.id, value)}
                                 className="editor"
@@ -217,7 +237,7 @@ const Home = (props: PropsFromRedux) => {
                               <Form.Label>Response body</Form.Label>
                               <AceEditor
                                 mode="json5"
-                                theme="github"
+                                theme={theme}
                                 value={JSON.stringify(tab.responseBody, null, 2)}
                                 className="editor"
                                 width="initial"

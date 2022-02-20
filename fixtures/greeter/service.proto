@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package protoui.sample.greeter;
+
+import "google/protobuf/timestamp.proto";
+
+service GreetersService {
+    rpc SayHello (SayHelloRequest) returns (SayHelloResponse);
+}
+
+message SayHelloRequest {
+    string name = 1;
+    google.protobuf.Timestamp timeOfDay = 2;
+}
+
+message SayHelloResponse {
+    bool success = 1;
+    string greeting = 2;
+}

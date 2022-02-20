@@ -1,3 +1,4 @@
+import { RouterState } from 'connected-react-router';
 import { Message, MessageFields, ServiceDefinition } from './proto';
 
 export interface RpcMetadataState {
@@ -27,5 +28,10 @@ export interface TabsState {
   tabs: TabState[];
   activeTab: string;
   protoDefinition: ProtoDefinitionState;
+  theme: string;
 }
 
+export interface State {
+  tabs: TabsState;
+  router: RouterState;
+}

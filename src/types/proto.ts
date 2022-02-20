@@ -14,6 +14,7 @@ export interface MessageFields {
 
 export interface Message {
   fields: MessageFields;
+  protoFile: string;
 }
 
 export interface MethodDefinition {

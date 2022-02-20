@@ -10,11 +10,18 @@ import {
   SET_REQUEST_METADATA,
   SET_RESPONSE_BODY,
   SET_SERVICE,
+  SET_THEME,
   TabsActionTypes,
 } from '../actiontypes/tabs';
 import { Message } from '../types/proto';
 import { ProtoDefinitionState, TabsState } from '../types/states';
 
+function getTheme(): string {
+  if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+    return 'dark';
+  }
+  return 'light';
+}
 
 const initialState: TabsState = {
   tabs: [],
@@ -24,6 +31,7 @@ const initialState: TabsState = {
     messageTemplates: new Map<string, Message>(),
     root: {},
   },
+  theme: getTheme(),
 };
 
 interface ServiceMethodMapping {
@@ -102,7 +110,7 @@ export default function tabsReducer(state = initialState, action: TabsActionType
           service: '',
           address: '',
           method: '',
-          metadata: '',
+          metadata: '{}',
           requestBody: '',
           responseBody: '',
           rpcMetadata: {
@@ -251,6 +259,11 @@ export default function tabsReducer(state = initialState, action: TabsActionType
       return {
         ...state,
         protoDefinition: action.protoDefinition,
+      };
+    case SET_THEME:
+      return {
+        ...state,
+        theme: action.theme,
       };
     default:
       return state;

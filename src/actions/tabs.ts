@@ -15,6 +15,7 @@ import {
   SET_REQUEST_METADATA,
   SET_RESPONSE_BODY,
   SET_SERVICE,
+  SET_THEME,
   SetActiveTabActionType,
   SetAddressActionType,
   SetMethodActionType,
@@ -22,6 +23,7 @@ import {
   SetRequestMetadataActionType,
   SetResponseBodyActionType,
   SetServiceActionType,
+  SetThemeActionType,
 } from '../actiontypes/tabs';
 import { ProtoDefinitionState } from '../types/states';
 
@@ -102,9 +104,15 @@ export function setResponseBody(id: string, body: string): SetResponseBodyAction
 }
 
 export function refreshProtoDefinitions(protoDefinition: ProtoDefinitionState): RefreshProtoDefinitionsActionType {
-  console.log(protoDefinition);
   return {
     type: REFRESH_PROTO_DEFINITIONS,
     protoDefinition,
+  };
+}
+
+export function setTheme(theme: string): SetThemeActionType {
+  return {
+    type: SET_THEME,
+    theme,
   };
 }

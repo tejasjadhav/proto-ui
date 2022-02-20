@@ -14,6 +14,8 @@ export const SET_RESPONSE_BODY = 'SET_RESPONSE_BODY';
 
 export const REFRESH_PROTO_DEFINITIONS = 'REFRESH_PROTO_DEFINITIONS';
 
+export const SET_THEME = 'SET_THEME';
+
 export interface NewTabActionType {
   type: typeof NEW_TAB;
   id: string;
@@ -75,6 +77,11 @@ export interface RefreshProtoDefinitionsActionType {
   protoDefinition: ProtoDefinitionState;
 }
 
+export interface SetThemeActionType {
+  type: typeof SET_THEME,
+  theme: string;
+}
+
 export type GrpcRequestActionTypes =
   SetServiceActionType
   | SetAddressActionType
@@ -89,4 +96,5 @@ export type TabsActionTypes =
   | SetActiveTabActionType
   | DeleteTabActionType
   | GrpcRequestActionTypes
-  | RefreshProtoDefinitionsActionType;
+  | RefreshProtoDefinitionsActionType
+  | SetThemeActionType;

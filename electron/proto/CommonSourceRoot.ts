@@ -4,17 +4,23 @@ import * as Protobuf from 'protobufjs';
 import { Service, Type } from 'protobufjs';
 import { FieldType, Message, MessageFields, MethodDefinition, ServiceDefinition } from '../../src/types/proto';
 
-export const PROTO_SOURCES = new Map<string, string>();
-PROTO_SOURCES.set('country.proto', '/Users/tejas/Go/src/source.golabs.io/gopay/gopay_contracts/proto/country.proto');
-PROTO_SOURCES.set('transaction.proto', '/Users/tejas/Projects/gopay/gopay-transaction-proto/src/main/proto/transaction.proto');
-PROTO_SOURCES.set('timestamp.proto', '/Users/tejas/Projects/protocolbuffers/protobuf/src/google/protobuf/timestamp.proto');
+export const PROTO_SOURCES: Set<string> = new Set([
+  '/Users/tejas/Go/src/source.golabs.io/gopay/gopay_contracts/proto',
+  '/Users/tejas/Projects/gopay/gopay-transaction-proto/src/main/proto',
+  '/Users/tejas/Projects/protocolbuffers/protobuf/src/google/protobuf',
+  '/Users/tejas/Go/src/source.golabs.io/gopay/order-management-service-proto/proto',
+  '/Users/tejas/Go/src/source.golabs.io/gopay/gopay_errors/proto',
+]);
+
 
 export class CommonSourceRoot extends Protobuf.Root {
   private _messageTemplates: Map<string, Message>;
+  private readonly importPaths: Set<string>;
 
-  constructor() {
+  constructor(importPaths: Set<string> = new Set<string>()) {
     super();
     this._messageTemplates = new Map<string, Message>();
+    this.importPaths = importPaths;
   }
 
   get messageTemplates(): Map<string, Message> {
@@ -27,7 +33,14 @@ export class CommonSourceRoot extends Protobuf.Root {
       return originalPath;
     }
 
-    return PROTO_SOURCES.get(target) ?? null;
+    for (let path of this.importPaths) {
+      const resolvedPath = Protobuf.util.path.resolve(path + '/', target);
+      if (fs.existsSync(resolvedPath)) {
+        return resolvedPath;
+      }
+    }
+
+    return null;
   }
 
   getServices(): ServiceDefinition[] {
@@ -88,6 +101,7 @@ export class CommonSourceRoot extends Protobuf.Root {
       // @ts-ignore
       messageTemplates.set(root.fullName, {
         fields: CommonSourceRoot.getTemplateFromFields(root),
+        protoFile: root.filename,
       });
     }
 
@@ -100,6 +114,7 @@ export class CommonSourceRoot extends Protobuf.Root {
             values: root.valuesById,
           },
         },
+        protoFile: root.filename,
       });
     }
 
